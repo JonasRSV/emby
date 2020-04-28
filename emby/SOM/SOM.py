@@ -33,6 +33,7 @@ class SOM:
     Fitting some 2D points
 
     >>> from emby import SOM
+    >>> import numpy as np
     >>> x = np.concatenate([
     ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),
     ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)
@@ -88,6 +89,7 @@ class SOM:
         Fit some 2D data
 
         >>> from emby import SOM
+        >>> import numpy as np
         >>> x = np.concatenate([
         ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),
         ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)
@@ -134,6 +136,7 @@ class SOM:
 
         >>> import matplotlib.pyplot as plt
         >>> from emby import SOM
+        >>> import numpy as np
         >>> x = np.concatenate([
         ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),
         ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)
@@ -171,6 +174,7 @@ class SOM:
 
         >>> import matplotlib.pyplot as plt
         >>> from emby import SOM
+        >>> import numpy as np
         >>> x = np.concatenate([
         ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),
         ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)
@@ -206,6 +210,7 @@ class SOM:
         fit and find closest bases
 
         >>> from emby import SOM
+        >>> import numpy as np
         >>> x = np.concatenate([
         ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=5),
         ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=5)
@@ -238,6 +243,7 @@ class SOM:
         fit and get similarities
 
         >>> from emby import SOM
+        >>> import numpy as np
         >>> x = np.concatenate([
         ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=5),
         ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=5)
