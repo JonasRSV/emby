@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>emby.SOM.SOM &#8212; emby 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">emby 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for emby.SOM.SOM</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">emby.SOM.placement</span> <span class="kn">import</span> <span class="n">_place_spheres</span><span class="p">,</span> <span class="n">_place_uniform</span>
+<span class="kn">from</span> <span class="nn">emby.SOM.core</span> <span class="kn">import</span> <span class="n">_pp_fit</span><span class="p">,</span> <span class="n">_euclidean_argmin</span><span class="p">,</span> <span class="n">_similarity_mode</span>
+
+
+<div class="viewcode-block" id="SOM"><a class="viewcode-back" href="../../../som.html#emby.SOM">[docs]</a><span class="k">class</span> <span class="nc">SOM</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A self-organizing map</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Z</span>
+<span class="sd">        dimensions of the embedding space</span>
+<span class="sd">    bases</span>
+<span class="sd">        Number of bases in the map</span>
+<span class="sd">    learning-rate</span>
+<span class="sd">        Learning rate used in competitive learning</span>
+<span class="sd">    epochs</span>
+<span class="sd">        Number of competitive learning iterations</span>
+<span class="sd">    y_variance</span>
+<span class="sd">        variance of neighbourhood function in embedding space</span>
+<span class="sd">    verbose</span>
+<span class="sd">        if true, prints progress of competitive learning</span>
+<span class="sd">    mode</span>
+<span class="sd">        (&quot;uniform&quot; | &quot;sphere&quot;) how the bases are placed in the embedding space</span>
+<span class="sd">    ``**mode_kwargs``</span>
+<span class="sd">        additional arguments for different modes</span>
+
+
+<span class="sd">    Examples</span>
+<span class="sd">    ---------</span>
+
+<span class="sd">    Fitting some 2D points</span>
+
+<span class="sd">    &gt;&gt;&gt; from emby import SOM</span>
+<span class="sd">    &gt;&gt;&gt; x = np.concatenate([</span>
+<span class="sd">    ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
+<span class="sd">    ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
+<span class="sd">    ... ])</span>
+<span class="sd">    &gt;&gt;&gt; som = SOM(Z=2, bases=2)</span>
+<span class="sd">    &gt;&gt;&gt; som.fit(x)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+                 <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+                 <span class="n">y_variance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+                 <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;uniform&quot;</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">mode_kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">Z</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bases</span> <span class="o">=</span> <span class="n">bases</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span> <span class="o">=</span> <span class="n">learning_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span> <span class="o">=</span> <span class="n">epochs</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_variance</span> <span class="o">=</span> <span class="n">y_variance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+
+        <span class="n">modes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;uniform&quot;</span><span class="p">:</span> <span class="n">_place_uniform</span><span class="p">,</span>
+            <span class="s2">&quot;sphere&quot;</span><span class="p">:</span> <span class="n">_place_spheres</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">modes</span><span class="p">[</span><span class="n">mode</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode_kwargs</span> <span class="o">=</span> <span class="n">mode_kwargs</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_bases</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_bases</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="SOM.fit"><a class="viewcode-back" href="../../../som.html#emby.SOM.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        fit(self, x: np.ndarray)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x</span>
+<span class="sd">            A 2-dimensional ndarray N x M</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ndarray</span>
+<span class="sd">            A 2-dimensional array N x Z</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">        Fit some 2D data</span>
+
+<span class="sd">        &gt;&gt;&gt; from emby import SOM</span>
+<span class="sd">        &gt;&gt;&gt; x = np.concatenate([</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
+<span class="sd">        ... ])</span>
+<span class="sd">        &gt;&gt;&gt; som = SOM(Z=2, bases=2)</span>
+<span class="sd">        &gt;&gt;&gt; som.fit(x)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_bases</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_bases</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
+                                               <span class="n">bases</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bases</span><span class="p">,</span>
+                                               <span class="n">z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span>
+                                               <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">mode_kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_bases</span> <span class="o">=</span> <span class="n">_pp_fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
+                               <span class="n">x_bases</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_bases</span><span class="p">,</span>
+                               <span class="n">y_bases</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_bases</span><span class="p">,</span>
+                               <span class="n">learning_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
+                               <span class="n">y_variance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_variance</span><span class="p">,</span>
+                               <span class="n">epochs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
+                               <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="SOM.fit_transform"><a class="viewcode-back" href="../../../som.html#emby.SOM.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        fit_transform(self, x: np.ndarray)</span>
+
+<span class="sd">        fit and then transform a tensor x onto the bases of the :class:`SOM`</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x</span>
+<span class="sd">            A 2-dimensional ndarray N x M</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ndarray</span>
+<span class="sd">            A 2-dimensional array N x Z</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">        Fit, transform and plot some 2D data</span>
+
+<span class="sd">        &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<span class="sd">        &gt;&gt;&gt; from emby import SOM</span>
+<span class="sd">        &gt;&gt;&gt; x = np.concatenate([</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
+<span class="sd">        ... ])</span>
+<span class="sd">        &gt;&gt;&gt; som = SOM(Z=2, bases=2)</span>
+<span class="sd">        &gt;&gt;&gt; base_space = som.fit_transform(x)</span>
+<span class="sd">        &gt;&gt;&gt; plt.plot(base_space[:, 0], base_space[:, 1])\</span>
+<span class="sd">        ... + np.random.normal(0, 1e-1, size=x.shape) # for some nice looking noise</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SOM.transform"><a class="viewcode-back" href="../../../som.html#emby.SOM.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        transform(self, x: np.ndarray)</span>
+
+<span class="sd">        Transform a tensor x onto the bases of the :class:`SOM`</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x</span>
+<span class="sd">            A 2-dimensional ndarray N x M</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ndarray</span>
+<span class="sd">            A 2-dimensional array N x Z</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">        transform and plot some 2D data</span>
+
+<span class="sd">        &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<span class="sd">        &gt;&gt;&gt; from emby import SOM</span>
+<span class="sd">        &gt;&gt;&gt; x = np.concatenate([</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
+<span class="sd">        ... ])</span>
+<span class="sd">        &gt;&gt;&gt; som = SOM(Z=2, bases=2)</span>
+<span class="sd">        &gt;&gt;&gt; som.fit(x)</span>
+<span class="sd">        &gt;&gt;&gt; base_space = som.transform(x)</span>
+<span class="sd">        &gt;&gt;&gt; plt.plot(base_space[:, 0], base_space[:, 1])</span>
+<span class="sd">        ... + np.random.normal(0, 1e-1, size=x.shape) # for some nice looking noise</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_bases</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">closest_base</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span></div>
+
+<div class="viewcode-block" id="SOM.closest_base"><a class="viewcode-back" href="../../../som.html#emby.SOM.closest_base">[docs]</a>    <span class="k">def</span> <span class="nf">closest_base</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        closest_base(self, x: np.ndarray)</span>
+
+<span class="sd">        Find the closest bases of the vectors in the x tensor</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x</span>
+<span class="sd">            A 2-dimensional ndarray N x M</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ndarray</span>
+<span class="sd">            A 1-dimensional array with shape N</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">        fit and find closest bases</span>
+
+<span class="sd">        &gt;&gt;&gt; from emby import SOM</span>
+<span class="sd">        &gt;&gt;&gt; x = np.concatenate([</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=5),</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=5)</span>
+<span class="sd">        ... ])</span>
+<span class="sd">        &gt;&gt;&gt; som = SOM(Z=2, bases=2)</span>
+<span class="sd">        &gt;&gt;&gt; som.fit(x)</span>
+<span class="sd">        &gt;&gt;&gt; closest = som.closest_base(x)</span>
+<span class="sd">        &gt;&gt;&gt; print(closest)</span>
+<span class="sd">        [0 0 0 0 0 1 1 1 1 1] # closest</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">_euclidean_argmin</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_bases</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SOM.base_similarities"><a class="viewcode-back" href="../../../som.html#emby.SOM.base_similarities">[docs]</a>    <span class="k">def</span> <span class="nf">base_similarities</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        base_similarities(self)</span>
+
+<span class="sd">        returns similarities between the bases</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ndarray</span>
+<span class="sd">            A matrix of similarities for the bases with shape (bases x bases). The n&#39;th entry in the similarity</span>
+<span class="sd">            matrix is the n&#39;t base as given by the function :func:`SOM.closest_base`</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">        fit and get similarities</span>
+
+<span class="sd">        &gt;&gt;&gt; from emby import SOM</span>
+<span class="sd">        &gt;&gt;&gt; x = np.concatenate([</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=5),</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=5)</span>
+<span class="sd">        ... ])</span>
+<span class="sd">        &gt;&gt;&gt; som = SOM(Z=2, bases=3)</span>
+<span class="sd">        &gt;&gt;&gt; som.fit(x)</span>
+<span class="sd">        &gt;&gt;&gt; similarities = som.base_similarities(x)</span>
+<span class="sd">        &gt;&gt;&gt; print(similarities)</span>
+<span class="sd">            [[1.         0.69387164 0.14295189]</span>
+<span class="sd">             [0.69387164 1.         0.1022911 ]</span>
+<span class="sd">             [0.14295189 0.1022911  1.        ]]</span>
+
+<span class="sd">        2 of the bases has high covariance, which makes sense since there are only 2 underlying clusters</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">_similarity_mode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_bases</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">emby 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Jonas Valfridsson.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.3.
+    </div>
+  </body>
+</html>
