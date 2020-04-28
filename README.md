@@ -4,4 +4,4 @@
 
 Is a tiny library consisting of embedding functions
 
-See documentation [here](https://jonasrsv.github.io/emby/build/html/index.html)
+See documentation and usage information [here](https://jonasrsv.github.io/emby/build/html/index.html)
