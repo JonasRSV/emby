@@ -43,8 +43,8 @@ class SOM:
     """
 
     def __init__(self, Z: int, bases: int,
-                 learning_rate: float = 0.1,
-                 epochs: int = 50,
+                 learning_rate: float = 0.01,
+                 epochs: int = 30,
                  y_variance: float = 0.1,
                  verbose: bool = False,
                  mode: str = "uniform",

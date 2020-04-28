@@ -17,9 +17,22 @@ Repository: `github <https://github.com/JonasRSV/emby>`_
 Installation
 =============
 
+.. code-block:: bash
+
+   git clone https://github.com/JonasRSV/emby.git
+   python3 setup.py install
+
 
 Usage
 =============
+
+.. code-block:: python3
+
+   import emby
+
+   ...
+
+See documentation for examples or visit the `examples <https://github.com/JonasRSV/emby/tree/master/examples>`_.
 
 
 
