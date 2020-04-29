@@ -11,6 +11,7 @@ Emby 0.0.1
    :caption: Contents:
 
    som.rst
+   config.rst
 
 Repository: `github <https://github.com/JonasRSV/emby>`_
 

@@ -1,6 +1,7 @@
 import numpy as np
 from emby.SOM.placement import _place_spheres, _place_uniform
-from emby.SOM.core import _pp_fit, _euclidean_argmin, _similarity_mode
+from emby.SOM.device import detect, cpu, gpu
+from emby.config import Logging, Device
 
 
 class SOM:
@@ -19,12 +20,14 @@ class SOM:
         Number of competitive learning iterations
     y_variance
         variance of neighbourhood function in embedding space
-    verbose
-        if true, prints progress of competitive learning
     mode
         ("uniform" | "sphere") how the bases are placed in the embedding space
-    ``**mode_kwargs``
-        additional arguments for different modes
+    logging
+        :class:`emby.Logging` level of logging to use (default no logging)
+    device
+        :class:`emby.Device` device configuration for this class (default detect)
+    ``**kwargs``
+        additional arguments..
 
 
     Examples
@@ -47,16 +50,21 @@ class SOM:
                  learning_rate: float = 0.01,
                  epochs: int = 30,
                  y_variance: float = 0.1,
-                 verbose: bool = False,
                  mode: str = "uniform",
-                 **mode_kwargs):
+                 logging: int = Logging.Nothing,
+                 device: int = Device.Detect,
+                 **kwargs):
         self.z = Z
         self.bases = bases
         self.learning_rate = learning_rate
         self.epochs = epochs
 
         self.y_variance = y_variance
-        self.verbose = verbose
+        self.logging = logging
+
+        self.fit_verbose = False
+        if logging > Logging.Nothing:
+            self.fit_verbose = True
 
         modes = {
             "uniform": _place_uniform,
@@ -64,7 +72,15 @@ class SOM:
         }
 
         self.mode = modes[mode]
-        self.mode_kwargs = mode_kwargs
+        self.kwargs = kwargs
+
+        modes = {
+            Device.Detect: detect,
+            Device.CPU: cpu,
+            Device.GPU: gpu
+        }
+
+        self._fit, self._closest_base, self._base_similarity = modes[device](logging)
 
         self.x_bases = None
         self.y_bases = None
@@ -101,15 +117,15 @@ class SOM:
         self.x_bases, self.y_bases = self.mode(x,
                                                bases=self.bases,
                                                z=self.z,
-                                               **self.mode_kwargs)
+                                               **self.kwargs)
 
-        self.x_bases = _pp_fit(x,
-                               x_bases=self.x_bases,
-                               y_bases=self.y_bases,
-                               learning_rate=self.learning_rate,
-                               y_variance=self.y_variance,
-                               epochs=self.epochs,
-                               verbose=self.verbose)
+        self.x_bases = self._fit(x,
+                                x_bases=self.x_bases,
+                                y_bases=self.y_bases,
+                                learning_rate=self.learning_rate,
+                                y_variance=self.y_variance,
+                                epochs=self.epochs,
+                                verbose=self.fit_verbose)
 
         return self
 
@@ -223,7 +239,7 @@ class SOM:
 
         """
 
-        return _euclidean_argmin(x, self.x_bases)
+        return self._closest_base(x, self.x_bases)
 
     def base_similarities(self):
         """
@@ -260,4 +276,4 @@ class SOM:
 
         """
 
-        return _similarity_mode(self.x_bases)
+        return self._base_similarity(self.x_bases)

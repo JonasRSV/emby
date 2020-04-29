@@ -11,7 +11,7 @@ def digits():
     x = digits.data
     y = digits.target
 
-    som = emby.SOM(Z=2, bases=100, epochs=100, verbose=True, y_variance=0.1)
+    som = emby.SOM(Z=2, bases=100, epochs=100, logging=emby.Logging.Everything, y_variance=0.1)
 
     colors = np.array(list(mcolors.TABLEAU_COLORS.values()))
 
@@ -38,7 +38,7 @@ def mnist():
 
     x, y = np.array(mnist_data), np.array(mnist_labels)
 
-    som = emby.SOM(Z=2, bases=100, epochs=40, verbose=True, y_variance=0.1)
+    som = emby.SOM(Z=2, bases=100, epochs=40, logging=emby.Logging.Progress, y_variance=0.1)
 
     colors = np.array(list(mcolors.TABLEAU_COLORS.values()))
 
@@ -51,5 +51,5 @@ def mnist():
 
 
 if __name__ == "__main__":
-    #digits()
-    mnist()
+    digits()
+    #mnist()
