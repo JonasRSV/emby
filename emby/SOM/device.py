@@ -1,9 +1,6 @@
 from numba import cuda
-import numpy as np
 from emby.config import Logging
 from . import cpu_core, gpu_core
-import platform
-import time
 
 
 def detect(logging: int):

@@ -5,3 +5,4 @@
 dist/
 emby.egg-info/
 gpubot_dev.sh
+examples/.ipynb_checkpoints/

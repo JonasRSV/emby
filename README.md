@@ -13,11 +13,11 @@ See /examples for code
 
 Sklearn digits data using SOM
 
-![sklearn digits](images/digits-som.png)
+<img src="images/digits-som.png" width=400px />
 
 MNIST data using SOM
 
-![MNIST](images/mnist-som.png)
+<img src="images/mnist-som.png" width=400px />
 
 
 
