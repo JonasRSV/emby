@@ -2,3 +2,6 @@
 .idea/
 **/__pycache__
 /build
+dist/
+emby.egg-info/
+gpubot_dev.sh

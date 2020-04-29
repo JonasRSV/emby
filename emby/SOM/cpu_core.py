@@ -40,22 +40,21 @@ def _euclidean_argmin(x: np.ndarray, x_bases: np.ndarray):
 
 
 @numba.jit(nopython=True, fastmath=True, forceobj=False)
-def _pp_fit(x: np.ndarray,
-            x_bases: np.ndarray,
-            y_bases: np.ndarray,
-            learning_rate: float,
-            y_variance: float,
-            epochs: int,
-            verbose: bool) -> np.ndarray:
+def _fit(x: np.ndarray,
+         x_bases: np.ndarray,
+         y_bases: np.ndarray,
+         learning_rate: float,
+         y_variance: float,
+         epochs: int,
+         verbose: bool) -> np.ndarray:
     bases = len(x_bases)
 
+    y_neighbourhood = np.exp(-np.sqrt(_euclidean(y_bases, y_bases)) / y_variance)
     for e in range(epochs):
         if verbose:
             x_freeze = x_bases.copy()
 
         winners = _euclidean_argmin(x, x_bases)
-
-        y_neighbourhood = np.exp(-np.sqrt(_euclidean(y_bases, y_bases)) / y_variance)
 
         # 1. x_bases winners is pulled towards the x
         # 2. x_bases pulls x_neighbourhood towards x as well

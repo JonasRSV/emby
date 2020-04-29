@@ -1,15 +1,14 @@
 from numba import cuda
+import numpy as np
 from emby.config import Logging
-from . import cpu_core
+from . import cpu_core, gpu_core
 import platform
+import time
 
 
 def detect(logging: int):
     try:
-        device_info = cuda.detect()
-
-        print("Device info", device_info)
-
+        cuda.detect()
         if cuda.is_available():
             return gpu(logging)
 
@@ -22,10 +21,14 @@ def detect(logging: int):
 
 def cpu(logging: int):
     if logging >= Logging.Everything:
-        print(f"Device CPU according to python platform: {platform.processor()}")
+        print(f"Device CPU")
 
-    return cpu_core._pp_fit, cpu_core._euclidean_argmin, cpu_core._similarity_mode
+    return cpu_core._fit, cpu_core._euclidean_argmin, cpu_core._similarity_mode
 
 
 def gpu(logging: int):
-    raise NotImplementedError("GPU is not implemented yet")
+    if logging >= Logging.Everything:
+        print(f"Device GPU")
+
+    return gpu_core._fit, gpu_core._euclidean_argmin, cpu_core._similarity_mode
+
