@@ -1,11 +1,15 @@
 from numba import cuda
 from emby.config import Logging
 from . import cpu_core, gpu_core
+import time
+import numpy as np
 
 
 def detect(logging: int):
     try:
-        cuda.detect()
+        if logging >= Logging.Everything:
+            cuda.detect()
+
         if cuda.is_available():
             return gpu(logging)
 

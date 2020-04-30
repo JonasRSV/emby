@@ -1,6 +1,7 @@
 import math
 from numba import cuda
 import numpy as np
+import time
 
 
 @cuda.jit
@@ -11,9 +12,9 @@ def _euclidean_gpu(arr_1: cuda.cudadrv.devicearray,
     arr_2_size = len(arr_2)
 
     arr_1_pos = cuda.grid(1)
-    arr_1_block_size = cuda.gridsize(1)
+    arr_1_grid_size = cuda.gridsize(1)
 
-    for i in range(arr_1_pos, arr_1_size, arr_1_block_size):
+    for i in range(arr_1_pos, arr_1_size, arr_1_grid_size):
         for j in range(arr_2_size):
             for k in range(dim):
                 res[i, j] += (arr_1[i, k] - arr_2[j, k]) * (arr_1[i, k] - arr_2[j, k])
@@ -31,8 +32,8 @@ def _euclidean(arr_1: np.ndarray, arr_2: np.ndarray):
 
     res = cuda.device_array((arr_1_size, arr_2_size), dtype=np.float32)
 
-    threads_per_block = np.minimum(1024, arr_1_size)
-    blocks = np.maximum(math.ceil(arr_1_size / threads_per_block), 1)
+    threads_per_block = 128
+    blocks = 64
 
     _euclidean_gpu[blocks, threads_per_block](arr_1, arr_2, res)
 
@@ -49,9 +50,10 @@ def _euclidean_argmin_gpu(arr_1: cuda.cudadrv.devicearray,
     arr_2_size = len(arr_2)
 
     arr_1_pos = cuda.grid(1)
-    block_size = cuda.gridsize(1)
+    grid_size = cuda.gridsize(1)
 
-    for i in range(arr_1_pos, arr_1_size, block_size):
+    
+    for i in range(arr_1_pos, arr_1_size, grid_size):
         min_distance, min_j = 10000, 0
         for j in range(arr_2_size):
             zj = 0.0
@@ -74,14 +76,14 @@ def _euclidean_argmin(arr_1: np.ndarray, arr_2: np.ndarray):
     arr_1_size = len(arr_1)
     arr_2_size = len(arr_2)
 
-    res = cuda.device_array(arr_1_size, dtype=np.int)
+    res = cuda.device_array(arr_1_size, dtype=np.int32)
 
-    threads_per_block = np.minimum(1024, arr_1_size)
-    blocks = np.maximum(math.ceil(arr_1_size / threads_per_block), 1)
-
+    threads_per_block = 128
+    blocks = 64
     _euclidean_argmin_gpu[blocks, threads_per_block](arr_1, arr_2, res)
 
     cuda.synchronize()
+
     return res.copy_to_host()
 
 
@@ -95,9 +97,9 @@ def _fit_winners_pull_gpu(winners: cuda.cudadrv.devicearray,
     bases_size, dim = x_bases.shape
 
     winner_pos = cuda.grid(1)
-    block_size = cuda.gridsize(1)
+    grid_size = cuda.gridsize(1)
 
-    for i in range(winner_pos, winners_size, block_size):
+    for i in range(winner_pos, winners_size, grid_size):
         winner = winners[i]
 
         for j in range(bases_size):
@@ -127,12 +129,17 @@ def _fit(x: np.ndarray,
 
     x_size = len(x)
 
-    threads_per_block = np.minimum(1024, x_size)
-    blocks = np.maximum(math.ceil(x_size / threads_per_block), 1)
+    threads_per_block = 128
+    blocks = 64
 
-    winners = cuda.device_array(len(x), dtype=np.int)
+    winners = cuda.device_array(len(x), dtype=np.int32)
 
-    for e in range(epochs):
+
+    previous = np.zeros(x_size)
+    avg_movement = 0.0
+    for e in range(1, epochs):
+        timestamp = time.time()
+
         _euclidean_argmin_gpu[blocks, threads_per_block](x, x_bases, winners)
 
         # 1. x_bases winners is pulled towards the x
@@ -140,8 +147,11 @@ def _fit(x: np.ndarray,
 
         _fit_winners_pull_gpu[blocks, threads_per_block](winners, x, x_bases, learning_rate, y_neighbourhood)
 
+        cuda.synchronize()
         if verbose:
-            print("epoch", e, " / ", epochs)
+            cpu_winners = winners.copy_to_host()
+            avg_movement += (cpu_winners != previous).mean()
+            previous = cpu_winners
+            print("epoch", e, " / ", epochs, "-- movement: ", avg_movement / e, " -- time: ", time.time() - timestamp, end="         \r")
 
-    cuda.synchronize()
     return x_bases.copy_to_host()

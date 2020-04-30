@@ -47,9 +47,9 @@ class SOM:
     """
 
     def __init__(self, Z: int, bases: int,
-                 learning_rate: float = 0.01,
+                 learning_rate: float = 0.4,
                  epochs: int = 30,
-                 y_variance: float = 0.1,
+                 y_variance: float = 0.2,
                  mode: str = "uniform",
                  logging: int = Logging.Nothing,
                  device: int = Device.Detect,
