@@ -1,5 +1,5 @@
 import math
-from numba import cuda
+from numba import cuda, float32
 import numpy as np
 import time
 
@@ -53,17 +53,29 @@ def _euclidean_argmin_gpu(arr_1: cuda.cudadrv.devicearray,
     grid_size = cuda.gridsize(1)
 
     
+    local = cuda.local.array(512000 // 32, dtype=float32) # max size 512kb
+    # using local memory gives a 2x speed-up
+    # But it limits the dimension of the bases to 60 000
+    # I don't believe this will be a problem though
     for i in range(arr_1_pos, arr_1_size, grid_size):
-        min_distance, min_j = 10000, 0
+        min_distance, min_j = 1000000.0, 0
+
+        for k in range(dim): local[k] = arr_1[i, k] # pre-load
+
+        
+        
+
         for j in range(arr_2_size):
             zj = 0.0
             for k in range(dim):
-                zj += (arr_1[i, k] - arr_2[j, k]) * (arr_1[i, k] - arr_2[j, k])
+                a1, a2 = local[k], arr_2[j, k]
+                zj += (a1 - a2) * (a1 - a2)
 
             if zj < min_distance:
                 min_distance, min_j = zj, j
 
         res[i] = min_j
+
 
 
 def _euclidean_argmin(arr_1: np.ndarray, arr_2: np.ndarray):
@@ -91,22 +103,28 @@ def _euclidean_argmin(arr_1: np.ndarray, arr_2: np.ndarray):
 def _fit_winners_pull_gpu(winners: cuda.cudadrv.devicearray,
                           x: cuda.cudadrv.devicearray,
                           x_bases: cuda.cudadrv.devicearray,
-                          learning_rate: cuda.cudadrv.devicearray,
-                          y_neighbourhood: cuda.cudadrv.devicearray):
+                          y_neighbourhood: cuda.cudadrv.devicearray,
+                          learning_rate: cuda.cudadrv.devicearray):
     winners_size = len(winners)
     bases_size, dim = x_bases.shape
 
     winner_pos = cuda.grid(1)
     grid_size = cuda.gridsize(1)
 
+    lr = learning_rate[0] # 20 % speedup by accesing that here
+
+    local = cuda.local.array(512000 // 64, dtype=float32) # 15% speed-up
     for i in range(winner_pos, winners_size, grid_size):
         winner = winners[i]
+
+        for k in range(dim): local[k] = x[i, k] # pre-load
 
         for j in range(bases_size):
             neighbourhood = y_neighbourhood[j, winner]
 
             for k in range(dim):
-                x_bases[j, k] = x_bases[j, k] + neighbourhood * learning_rate[0] * (x[i, k] - x_bases[j, k])
+                xb = x_bases[j, k]
+                x_bases[j, k] = xb + neighbourhood * lr * (local[k] - xb)
 
 
 def _fit(x: np.ndarray,
@@ -145,7 +163,7 @@ def _fit(x: np.ndarray,
         # 1. x_bases winners is pulled towards the x
         # 2. x_bases pulls x_neighbourhood towards x as well
 
-        _fit_winners_pull_gpu[blocks, threads_per_block](winners, x, x_bases, learning_rate, y_neighbourhood)
+        _fit_winners_pull_gpu[blocks, threads_per_block](winners, x, x_bases, y_neighbourhood, learning_rate)
 
         cuda.synchronize()
         if verbose:
