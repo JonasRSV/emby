@@ -3,31 +3,31 @@ from emby.config import Logging
 from . import cpu_core, gpu_core
 
 
-def detect(logging: int):
+def detect(logging: int, kernel: str, **kwargs):
     try:
         if logging >= Logging.Everything:
             cuda.detect()
 
         if cuda.is_available():
-            return gpu(logging)
+            return gpu(logging, kernel, **kwargs)
 
     except cuda.cudadrv.error.CudaSupportError as e:
         if logging >= Logging.Everything:
             print(f"Unable to initialize cuda driver {e}")
 
-    return cpu(logging)
+    return cpu(logging, kernel, **kwargs)
 
 
-def cpu(logging: int):
+def cpu(logging: int, kernel: str, **kwargs):
     if logging >= Logging.Everything:
         print(f"Device CPU")
 
-    return cpu_core._fit, cpu_core._euclidean_argmin, cpu_core._similarity_mode
+    return cpu_core.fit, cpu_core.project, cpu_core.kernel(name=kernel, **kwargs)
 
 
-def gpu(logging: int):
+def gpu(logging: int, kernel: str, **kwargs):
     if logging >= Logging.Everything:
         print(f"Device GPU")
+    raise NotImplementedError()
 
-    return gpu_core._fit, gpu_core._euclidean_argmin, cpu_core._similarity_mode
 

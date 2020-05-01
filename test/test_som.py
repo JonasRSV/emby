@@ -22,13 +22,24 @@ class SOMTest(unittest.TestCase):
             np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)
         ])
 
-        som = SOM(Z=2, bases=2)
+        som = SOM(Z=2, bases=2, epochs=50, learning_rate=0.01)
         som.fit(x)
         closest = som.closest_base(x)
 
         label = np.concatenate([np.zeros(500), np.ones(500)])
 
         self.assertTrue(np.all(closest == label) or np.all(closest == np.flip(label)))
+
+    def test_different_z(self):
+        x = np.concatenate([
+            np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),
+            np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)
+        ])
+
+        for z in range(1, 4):
+            som = SOM(Z=z, bases=20, epochs=50, learning_rate=0.01)
+            som.fit_transform(x)
+
 
 
 

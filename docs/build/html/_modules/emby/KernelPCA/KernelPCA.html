@@ -1,0 +1,253 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>emby.KernelPCA.KernelPCA &#8212; emby 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">emby 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for emby.KernelPCA.KernelPCA</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">emby.KernelPCA.device</span> <span class="k">import</span> <span class="n">detect</span><span class="p">,</span> <span class="n">cpu</span><span class="p">,</span> <span class="n">gpu</span>
+<span class="kn">from</span> <span class="nn">emby.config</span> <span class="k">import</span> <span class="n">Logging</span><span class="p">,</span> <span class="n">Device</span>
+
+
+<div class="viewcode-block" id="KernelPCA"><a class="viewcode-back" href="../../../kernelpca.html#emby.KernelPCA">[docs]</a><span class="k">class</span> <span class="nc">KernelPCA</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A Implementation of kernel PCA</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Z</span>
+<span class="sd">        dimensions of the embedding space</span>
+<span class="sd">    kernel</span>
+<span class="sd">        The feature space (gaussian | polynomial)</span>
+<span class="sd">    logging</span>
+<span class="sd">        :class:`emby.Logging` level of logging to use (default no logging)</span>
+<span class="sd">    device</span>
+<span class="sd">        :class:`emby.Device` device configuration for this class (default detect)</span>
+<span class="sd">    ``**kwargs``</span>
+<span class="sd">        additional arguments.. passed to kernel (variance for gaussian, c &amp; d for polynomial)</span>
+
+
+<span class="sd">    Examples</span>
+<span class="sd">    ---------</span>
+
+<span class="sd">    Fitting some 2D points</span>
+
+<span class="sd">    &gt;&gt;&gt; from emby import KernelPCA</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; x = np.concatenate([</span>
+<span class="sd">    ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
+<span class="sd">    ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
+<span class="sd">    ... ])</span>
+<span class="sd">    &gt;&gt;&gt; kpca = KernelPCA(Z=2)</span>
+<span class="sd">    &gt;&gt;&gt; kpca.fit_transform(x)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;gaussian&quot;</span><span class="p">,</span>
+                 <span class="n">logging</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Logging</span><span class="o">.</span><span class="n">Nothing</span><span class="p">,</span>
+                 <span class="n">device</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Device</span><span class="o">.</span><span class="n">Detect</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">Z</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logging</span> <span class="o">=</span> <span class="n">logging</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_verbose</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">logging</span> <span class="o">&gt;</span> <span class="n">Logging</span><span class="o">.</span><span class="n">Nothing</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fit_verbose</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+        <span class="n">modes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">Device</span><span class="o">.</span><span class="n">Detect</span><span class="p">:</span> <span class="n">detect</span><span class="p">,</span>
+            <span class="n">Device</span><span class="o">.</span><span class="n">CPU</span><span class="p">:</span> <span class="n">cpu</span><span class="p">,</span>
+            <span class="n">Device</span><span class="o">.</span><span class="n">GPU</span><span class="p">:</span> <span class="n">gpu</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_project</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">=</span> <span class="n">modes</span><span class="p">[</span><span class="n">device</span><span class="p">](</span><span class="n">logging</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">evecs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="KernelPCA.fit"><a class="viewcode-back" href="../../../kernelpca.html#emby.KernelPCA.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        fit(self, x: np.ndarray)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x</span>
+<span class="sd">            A 2-dimensional ndarray N x M</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ndarray</span>
+<span class="sd">            A 2-dimensional array N x Z</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">        Fit some 2D data</span>
+
+<span class="sd">        &gt;&gt;&gt; from emby import KernelPCA</span>
+<span class="sd">        &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">        &gt;&gt;&gt; x = np.concatenate([</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
+<span class="sd">        ... ])</span>
+<span class="sd">        &gt;&gt;&gt; kpca = KernelPCA(Z=2)</span>
+<span class="sd">        &gt;&gt;&gt; kpca.fit(x)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">evecs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="KernelPCA.fit_transform"><a class="viewcode-back" href="../../../kernelpca.html#emby.KernelPCA.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        fit_transform(self, x: np.ndarray)</span>
+
+<span class="sd">        fit and then transform a tensor x onto the bases of the :class:`SOM`</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x</span>
+<span class="sd">            A 2-dimensional ndarray N x M</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ndarray</span>
+<span class="sd">            A 2-dimensional array N x Z</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">        Fit, transform and plot some 2D data</span>
+
+<span class="sd">        &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<span class="sd">        &gt;&gt;&gt; from emby import KernelPCA</span>
+<span class="sd">        &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">        &gt;&gt;&gt; x = np.concatenate([</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
+<span class="sd">        ... ])</span>
+<span class="sd">        &gt;&gt;&gt; kpca = KernelPCA(Z=2)</span>
+<span class="sd">        &gt;&gt;&gt; base_space = kpca.fit_transform(x)</span>
+<span class="sd">        &gt;&gt;&gt; plt.plot(base_space[:, 0], base_space[:, 1])\</span>
+<span class="sd">        ... + np.random.normal(0, 1e-1, size=x.shape) # for some nice looking noise</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="KernelPCA.transform"><a class="viewcode-back" href="../../../kernelpca.html#emby.KernelPCA.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        transform(self, x: np.ndarray)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x</span>
+<span class="sd">            A 2-dimensional ndarray N x M</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ndarray</span>
+<span class="sd">            A 2-dimensional array N x Z</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">        transform and plot some 2D data</span>
+
+<span class="sd">        &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<span class="sd">        &gt;&gt;&gt; from emby import KernelPCA</span>
+<span class="sd">        &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">        &gt;&gt;&gt; x = np.concatenate([</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
+<span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
+<span class="sd">        ... ])</span>
+<span class="sd">        &gt;&gt;&gt; kcpa = KernelPCA(Z=2)</span>
+<span class="sd">        &gt;&gt;&gt; kcpa.fit(x)</span>
+<span class="sd">        &gt;&gt;&gt; base_space = kcpa.transform(x)</span>
+<span class="sd">        &gt;&gt;&gt; plt.plot(base_space[:, 0], base_space[:, 1])</span>
+<span class="sd">        ... + np.random.normal(0, 1e-1, size=x.shape) # for some nice looking noise</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_project</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">eigen_vectors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">evecs</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span><span class="p">)</span></div></div>
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">emby 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Jonas Valfridsson.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
+    </div>
+  </body>
+</html>
