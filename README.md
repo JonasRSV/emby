@@ -9,6 +9,8 @@ See documentation, installation and usage information [here](https://jonasrsv.gi
 Now with GPU support for SOM!
 
 ```python
+import emby
+import time
 from sklearn.datasets import load_digits
 
 digits = load_digits()
