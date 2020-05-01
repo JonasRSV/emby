@@ -14,7 +14,7 @@ def benchmark_argmin():
 
     a = np.random.rand(SIZE_LG, DIM).astype(np.float32)
     b = np.random.rand(SIZE_SM, DIM).astype(np.float32)
-    c = np.zeros(SIZE_LG, dtype=np.int32)
+    c = np.zeros(SIZE_LG, dtype=np.int64)
 
 
 
@@ -41,6 +41,7 @@ def benchmark_argmin():
     gpu_argmin[batches, thread_in_batch](a_gpu, b_gpu, c_gpu)
     cuda.synchronize()
     print("GPU time", time.time() - timestamp)
+    #print(gpu_argmin.inspect_types())
 
 def benchmark_winners_pull():
     SIZE_LG = 100000
@@ -72,5 +73,5 @@ def benchmark_winners_pull():
     print("GPU time", time.time() - timestamp)
 
 
-#benchmark_argmin()
-benchmark_winners_pull()
+benchmark_argmin()
+#benchmark_winners_pull()

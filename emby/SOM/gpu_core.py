@@ -63,8 +63,6 @@ def _euclidean_argmin_gpu(arr_1: cuda.cudadrv.devicearray,
         for k in range(dim): local[k] = arr_1[i, k] # pre-load
 
         
-        
-
         for j in range(arr_2_size):
             zj = 0.0
             for k in range(dim):
@@ -150,7 +148,7 @@ def _fit(x: np.ndarray,
     threads_per_block = 128
     blocks = 64
 
-    winners = cuda.device_array(len(x), dtype=np.int32)
+    winners = cuda.device_array(len(x), dtype=np.int64)
 
 
     previous = np.zeros(x_size)
@@ -170,6 +168,6 @@ def _fit(x: np.ndarray,
             cpu_winners = winners.copy_to_host()
             avg_movement += (cpu_winners != previous).mean()
             previous = cpu_winners
-            print("epoch", e, " / ", epochs, "-- movement: ", avg_movement / e, " -- time: ", time.time() - timestamp, end="         \r")
+            print("epoch", e, " / ", epochs, "-- movement: %.2f " % (avg_movement / e), " -- time: %.3f " % (time.time() - timestamp), end="                  \r")
 
     return x_bases.copy_to_host()

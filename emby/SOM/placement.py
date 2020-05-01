@@ -19,6 +19,7 @@ def _place_uniform(x: np.ndarray, bases: int, z: int, uniform_base_position="ran
         base = next(combinations)
         y_bases[i] = np.array(base)
 
+
     return x_bases, y_bases / (dim_size - 1)
 
 
