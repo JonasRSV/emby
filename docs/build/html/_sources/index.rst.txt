@@ -12,6 +12,7 @@ Emby 0.0.1
 
    som.rst
    kernelpca.rst
+   mm.rst
    config.rst
 
 Repository: `github <https://github.com/JonasRSV/emby>`_

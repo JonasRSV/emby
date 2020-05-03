@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Kernel PCA &#8212; emby 0.0.1 documentation</title>
+    <title>Metric Matching (MM) &#8212; emby 0.0.1 documentation</title>
     <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -23,8 +23,8 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Metric Matching (MM)" href="mm.html" />
-    <link rel="prev" title="Self Organizing Map" href="som.html" /> 
+    <link rel="next" title="Configuration" href="config.html" />
+    <link rel="prev" title="Kernel PCA" href="kernelpca.html" /> 
   </head>
   <body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -34,10 +34,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="mm.html" title="Metric Matching (MM)"
+          <a href="config.html" title="Configuration"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="som.html" title="Self Organizing Map"
+          <a href="kernelpca.html" title="Kernel PCA"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">emby 0.0.1 documentation</a> &#187;</li> 
       </ul>
@@ -48,19 +48,21 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="kernel-pca">
-<span id="kernelpca"></span><h1>Kernel PCA<a class="headerlink" href="#kernel-pca" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="metric-matching-mm">
+<span id="mm"></span><h1>Metric Matching (MM)<a class="headerlink" href="#metric-matching-mm" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
-<dt id="emby.KernelPCA">
-<em class="property">class </em><code class="descclassname">emby.</code><code class="descname">KernelPCA</code><span class="sig-paren">(</span><em>Z: int</em>, <em>kernel: str = 'gaussian'</em>, <em>logging: int = 0</em>, <em>device: int = 0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/emby/KernelPCA/KernelPCA.html#KernelPCA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#emby.KernelPCA" title="Permalink to this definition">¶</a></dt>
-<dd><p>A Implementation of kernel PCA</p>
+<dt id="emby.MM">
+<em class="property">class </em><code class="descclassname">emby.</code><code class="descname">MM</code><span class="sig-paren">(</span><em>Z: int</em>, <em>metric: str = 'euclidean'</em>, <em>x_variance: float = 1.0</em>, <em>z_variance: float = 1.0</em>, <em>epochs: int = 100</em>, <em>logging: int = 0</em>, <em>device: int = 0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/emby/MM/MM.html#MM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#emby.MM" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Implementation of metric minimization</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>Z</strong> – dimensions of the embedding space</li>
-<li><strong>kernel</strong> – The feature space (gaussian | polynomial)</li>
+<li><strong>metric</strong> – metric to minimize: euclidean | cosine</li>
+<li><strong>x_variance</strong> – variance in x_space</li>
+<li><strong>z_variance</strong> – variance in z_space</li>
 <li><strong>logging</strong> – <a class="reference internal" href="config.html#emby.Logging" title="emby.Logging"><code class="xref py py-class docutils literal"><span class="pre">emby.Logging</span></code></a> level of logging to use (default no logging)</li>
 <li><strong>device</strong> – <a class="reference internal" href="config.html#emby.Device" title="emby.Device"><code class="xref py py-class docutils literal"><span class="pre">emby.Device</span></code></a> device configuration for this class (default detect)</li>
 <li><strong>**kwargs</strong> – additional arguments.. passed to kernel (variance for gaussian, c &amp; d for polynomial)</li>
@@ -71,19 +73,19 @@
 </table>
 <p class="rubric">Examples</p>
 <p>Fitting some 2D points</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">emby</span> <span class="k">import</span> <span class="n">KernelPCA</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">emby</span> <span class="k">import</span> <span class="n">MM</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
 <span class="gp">... </span>   <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="mi">500</span><span class="p">),</span>
 <span class="gp">... </span>   <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 <span class="gp">... </span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">kpca</span> <span class="o">=</span> <span class="n">KernelPCA</span><span class="p">(</span><span class="n">Z</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">kpca</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mm</span> <span class="o">=</span> <span class="n">MM</span><span class="p">(</span><span class="n">Z</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mm</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </pre></div>
 </div>
 <dl class="method">
-<dt id="emby.KernelPCA.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>self</em>, <em>x: np.ndarray</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/emby/KernelPCA/KernelPCA.html#KernelPCA.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#emby.KernelPCA.fit" title="Permalink to this definition">¶</a></dt>
+<dt id="emby.MM.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>self</em>, <em>x: np.ndarray</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/emby/MM/MM.html#MM.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#emby.MM.fit" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -98,21 +100,21 @@
 </table>
 <p class="rubric">Examples</p>
 <p>Fit some 2D data</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">emby</span> <span class="k">import</span> <span class="n">KernelPCA</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">emby</span> <span class="k">import</span> <span class="n">MM</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
 <span class="gp">... </span>   <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="mi">500</span><span class="p">),</span>
 <span class="gp">... </span>   <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 <span class="gp">... </span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">kpca</span> <span class="o">=</span> <span class="n">KernelPCA</span><span class="p">(</span><span class="n">Z</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">kpca</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mm</span> <span class="o">=</span> <span class="n">MM</span><span class="p">(</span><span class="n">Z</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>
 
 <dl class="method">
-<dt id="emby.KernelPCA.fit_transform">
-<code class="descname">fit_transform</code><span class="sig-paren">(</span><em>self</em>, <em>x: np.ndarray</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/emby/KernelPCA/KernelPCA.html#KernelPCA.fit_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#emby.KernelPCA.fit_transform" title="Permalink to this definition">¶</a></dt>
+<dt id="emby.MM.fit_transform">
+<code class="descname">fit_transform</code><span class="sig-paren">(</span><em>self</em>, <em>x: np.ndarray</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/emby/MM/MM.html#MM.fit_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#emby.MM.fit_transform" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -128,22 +130,22 @@
 <p class="rubric">Examples</p>
 <p>Fit, transform and plot some 2D data</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">emby</span> <span class="k">import</span> <span class="n">KernelPCA</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">emby</span> <span class="k">import</span> <span class="n">MM</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
 <span class="gp">... </span>   <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="mi">500</span><span class="p">),</span>
 <span class="gp">... </span>   <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 <span class="gp">... </span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">kpca</span> <span class="o">=</span> <span class="n">KernelPCA</span><span class="p">(</span><span class="n">Z</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">base_space</span> <span class="o">=</span> <span class="n">kpca</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mm</span> <span class="o">=</span> <span class="n">MM</span><span class="p">(</span><span class="n">Z</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">base_space</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">base_space</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">base_space</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
 </pre></div>
 </div>
 </dd></dl>
 
 <dl class="method">
-<dt id="emby.KernelPCA.transform">
-<code class="descname">transform</code><span class="sig-paren">(</span><em>self</em>, <em>x: np.ndarray</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/emby/KernelPCA/KernelPCA.html#KernelPCA.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#emby.KernelPCA.transform" title="Permalink to this definition">¶</a></dt>
+<dt id="emby.MM.transform">
+<code class="descname">transform</code><span class="sig-paren">(</span><em>self</em>, <em>x: np.ndarray</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/emby/MM/MM.html#MM.transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#emby.MM.transform" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -159,15 +161,15 @@
 <p class="rubric">Examples</p>
 <p>transform and plot some 2D data</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">emby</span> <span class="k">import</span> <span class="n">KernelPCA</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">emby</span> <span class="k">import</span> <span class="n">MM</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
 <span class="gp">... </span>   <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="mi">500</span><span class="p">),</span>
 <span class="gp">... </span>   <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 <span class="gp">... </span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">kcpa</span> <span class="o">=</span> <span class="n">KernelPCA</span><span class="p">(</span><span class="n">Z</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">kcpa</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">base_space</span> <span class="o">=</span> <span class="n">kcpa</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mm</span> <span class="o">=</span> <span class="n">MM</span><span class="p">(</span><span class="n">Z</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">base_space</span> <span class="o">=</span> <span class="n">mm</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">base_space</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">base_space</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
 </pre></div>
 </div>
@@ -184,11 +186,11 @@
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
-  <p class="topless"><a href="som.html"
-                        title="previous chapter">Self Organizing Map</a></p>
+  <p class="topless"><a href="kernelpca.html"
+                        title="previous chapter">Kernel PCA</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="mm.html"
-                        title="next chapter">Metric Matching (MM)</a></p>
+  <p class="topless"><a href="config.html"
+                        title="next chapter">Configuration</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -210,10 +212,10 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="mm.html" title="Metric Matching (MM)"
+          <a href="config.html" title="Configuration"
              >next</a> |</li>
         <li class="right" >
-          <a href="som.html" title="Self Organizing Map"
+          <a href="kernelpca.html" title="Kernel PCA"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">emby 0.0.1 documentation</a> &#187;</li> 
       </ul>

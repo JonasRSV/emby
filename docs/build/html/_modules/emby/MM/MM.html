@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>emby.KernelPCA.KernelPCA &#8212; emby 0.0.1 documentation</title>
+    <title>emby.MM.MM &#8212; emby 0.0.1 documentation</title>
     <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -41,22 +41,26 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <h1>Source code for emby.KernelPCA.KernelPCA</h1><div class="highlight"><pre>
+  <h1>Source code for emby.MM.MM</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">emby.KernelPCA.device</span> <span class="k">import</span> <span class="n">detect</span><span class="p">,</span> <span class="n">cpu</span><span class="p">,</span> <span class="n">gpu</span>
+<span class="kn">from</span> <span class="nn">emby.MM.device</span> <span class="k">import</span> <span class="n">detect</span><span class="p">,</span> <span class="n">cpu</span><span class="p">,</span> <span class="n">gpu</span>
 <span class="kn">from</span> <span class="nn">emby.config</span> <span class="k">import</span> <span class="n">Logging</span><span class="p">,</span> <span class="n">Device</span>
 
 
-<div class="viewcode-block" id="KernelPCA"><a class="viewcode-back" href="../../../kernelpca.html#emby.KernelPCA">[docs]</a><span class="k">class</span> <span class="nc">KernelPCA</span><span class="p">:</span>
+<div class="viewcode-block" id="MM"><a class="viewcode-back" href="../../../mm.html#emby.MM">[docs]</a><span class="k">class</span> <span class="nc">MM</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    A Implementation of kernel PCA</span>
+<span class="sd">    A Implementation of metric minimization</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    Z</span>
 <span class="sd">        dimensions of the embedding space</span>
-<span class="sd">    kernel</span>
-<span class="sd">        The feature space (gaussian | polynomial)</span>
+<span class="sd">    metric:</span>
+<span class="sd">        metric to minimize: euclidean | cosine</span>
+<span class="sd">    x_variance:</span>
+<span class="sd">        variance in x_space</span>
+<span class="sd">    z_variance:</span>
+<span class="sd">        variance in z_space</span>
 <span class="sd">    logging</span>
 <span class="sd">        :class:`emby.Logging` level of logging to use (default no logging)</span>
 <span class="sd">    device</span>
@@ -70,23 +74,29 @@
 
 <span class="sd">    Fitting some 2D points</span>
 
-<span class="sd">    &gt;&gt;&gt; from emby import KernelPCA</span>
+<span class="sd">    &gt;&gt;&gt; from emby import MM</span>
 <span class="sd">    &gt;&gt;&gt; import numpy as np</span>
 <span class="sd">    &gt;&gt;&gt; x = np.concatenate([</span>
 <span class="sd">    ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
 <span class="sd">    ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
 <span class="sd">    ... ])</span>
-<span class="sd">    &gt;&gt;&gt; kpca = KernelPCA(Z=2)</span>
-<span class="sd">    &gt;&gt;&gt; kpca.fit_transform(x)</span>
+<span class="sd">    &gt;&gt;&gt; mm = MM(Z=2)</span>
+<span class="sd">    &gt;&gt;&gt; mm.fit_transform(x)</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                 <span class="n">kernel</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;gaussian&quot;</span><span class="p">,</span>
+                 <span class="n">metric</span><span class="p">:</span><span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;euclidean&quot;</span><span class="p">,</span>
+                 <span class="n">x_variance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+                 <span class="n">z_variance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+                 <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
                  <span class="n">logging</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Logging</span><span class="o">.</span><span class="n">Nothing</span><span class="p">,</span>
                  <span class="n">device</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Device</span><span class="o">.</span><span class="n">Detect</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">Z</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_variance</span> <span class="o">=</span> <span class="n">x_variance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z_variance</span> <span class="o">=</span> <span class="n">z_variance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span> <span class="o">=</span> <span class="n">epochs</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">logging</span> <span class="o">=</span> <span class="n">logging</span>
 
@@ -102,12 +112,12 @@
             <span class="n">Device</span><span class="o">.</span><span class="n">GPU</span><span class="p">:</span> <span class="n">gpu</span>
         <span class="p">}</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_project</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span> <span class="o">=</span> <span class="n">modes</span><span class="p">[</span><span class="n">device</span><span class="p">](</span><span class="n">logging</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_closest</span> <span class="o">=</span> <span class="n">modes</span><span class="p">[</span><span class="n">device</span><span class="p">](</span><span class="n">logging</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">evecs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bases</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="KernelPCA.fit"><a class="viewcode-back" href="../../../kernelpca.html#emby.KernelPCA.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<div class="viewcode-block" id="MM.fit"><a class="viewcode-back" href="../../../mm.html#emby.MM.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        fit(self, x: np.ndarray)</span>
 
@@ -126,21 +136,28 @@
 
 <span class="sd">        Fit some 2D data</span>
 
-<span class="sd">        &gt;&gt;&gt; from emby import KernelPCA</span>
+<span class="sd">        &gt;&gt;&gt; from emby import MM</span>
 <span class="sd">        &gt;&gt;&gt; import numpy as np</span>
 <span class="sd">        &gt;&gt;&gt; x = np.concatenate([</span>
 <span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
 <span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
 <span class="sd">        ... ])</span>
-<span class="sd">        &gt;&gt;&gt; kpca = KernelPCA(Z=2)</span>
-<span class="sd">        &gt;&gt;&gt; kpca.fit(x)</span>
+<span class="sd">        &gt;&gt;&gt; mm = MM(Z=2)</span>
+<span class="sd">        &gt;&gt;&gt; mm.fit(x)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">evecs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bases</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span>
+                               <span class="n">z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span>
+                               <span class="n">x_variance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_variance</span><span class="p">,</span>
+                               <span class="n">z_variance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">z_variance</span><span class="p">,</span>
+                               <span class="n">epochs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
+                               <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_verbose</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="n">x</span>
 
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="KernelPCA.fit_transform"><a class="viewcode-back" href="../../../kernelpca.html#emby.KernelPCA.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+
+<div class="viewcode-block" id="MM.fit_transform"><a class="viewcode-back" href="../../../mm.html#emby.MM.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        fit_transform(self, x: np.ndarray)</span>
 
@@ -160,22 +177,22 @@
 <span class="sd">        Fit, transform and plot some 2D data</span>
 
 <span class="sd">        &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<span class="sd">        &gt;&gt;&gt; from emby import KernelPCA</span>
+<span class="sd">        &gt;&gt;&gt; from emby import MM</span>
 <span class="sd">        &gt;&gt;&gt; import numpy as np</span>
 <span class="sd">        &gt;&gt;&gt; x = np.concatenate([</span>
 <span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
 <span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
 <span class="sd">        ... ])</span>
-<span class="sd">        &gt;&gt;&gt; kpca = KernelPCA(Z=2)</span>
-<span class="sd">        &gt;&gt;&gt; base_space = kpca.fit_transform(x)</span>
+<span class="sd">        &gt;&gt;&gt; mm = MM(Z=2)</span>
+<span class="sd">        &gt;&gt;&gt; base_space = mm.fit_transform(x)</span>
 <span class="sd">        &gt;&gt;&gt; plt.plot(base_space[:, 0], base_space[:, 1])</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bases</span></div>
 
-<div class="viewcode-block" id="KernelPCA.transform"><a class="viewcode-back" href="../../../kernelpca.html#emby.KernelPCA.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<div class="viewcode-block" id="MM.transform"><a class="viewcode-back" href="../../../mm.html#emby.MM.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        transform(self, x: np.ndarray)</span>
 
@@ -195,21 +212,20 @@
 <span class="sd">        transform and plot some 2D data</span>
 
 <span class="sd">        &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<span class="sd">        &gt;&gt;&gt; from emby import KernelPCA</span>
+<span class="sd">        &gt;&gt;&gt; from emby import MM</span>
 <span class="sd">        &gt;&gt;&gt; import numpy as np</span>
 <span class="sd">        &gt;&gt;&gt; x = np.concatenate([</span>
 <span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),</span>
 <span class="sd">        ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)</span>
 <span class="sd">        ... ])</span>
-<span class="sd">        &gt;&gt;&gt; kcpa = KernelPCA(Z=2)</span>
-<span class="sd">        &gt;&gt;&gt; kcpa.fit(x)</span>
-<span class="sd">        &gt;&gt;&gt; base_space = kcpa.transform(x)</span>
+<span class="sd">        &gt;&gt;&gt; mm = MM(Z=2)</span>
+<span class="sd">        &gt;&gt;&gt; mm.fit(x)</span>
+<span class="sd">        &gt;&gt;&gt; base_space = mm.transform(x)</span>
 <span class="sd">        &gt;&gt;&gt; plt.plot(base_space[:, 0], base_space[:, 1])</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_project</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">eigen_vectors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">evecs</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel</span><span class="p">)</span></div></div>
 
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bases</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_closest</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)]</span></div></div>
 </pre></div>
 
           </div>

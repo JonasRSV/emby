@@ -31,7 +31,7 @@ def digits():
     y = digits.target
     x = x - x.mean()
 
-    mm = emby.MM(Z=2, x_variance=0.05, z_variance=1.0, epochs=100, logging=emby.Logging.Everything)
+    mm = emby.MM(Z=2, x_variance=40.0, z_variance=0.5, epochs=10000, logging=emby.Logging.Everything)
 
     colors = np.array(list(mcolors.TABLEAU_COLORS.values()))
 
@@ -39,7 +39,7 @@ def digits():
 
     plt.figure(figsize=(14, 14))
     plt.scatter(embeddings[:, 0], embeddings[:, 1], color=colors[y])
-    # plt.savefig("../images/digits-kpca.png", bbox_inches="tight")
+    plt.savefig("../images/digits-mm.png", bbox_inches="tight")
     plt.show()
 
 
@@ -72,5 +72,5 @@ def mnist():
 
 if __name__ == "__main__":
     # simple_clusters()
-    #digits()
-    mnist()
+    digits()
+    #mnist()

@@ -11,7 +11,7 @@ def digits():
     x = digits.data
     y = digits.target
 
-    som = emby.SOM(Z=2, bases=100, epochs=100, logging=emby.Logging.Everything, y_variance=0.1)
+    som = emby.SOM(Z=2, bases=1000, epochs=25, logging=emby.Logging.Everything, y_variance=0.1)
 
     colors = np.array(list(mcolors.TABLEAU_COLORS.values()))
 

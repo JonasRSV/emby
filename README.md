@@ -9,6 +9,7 @@ See documentation, installation and usage information [here](https://jonasrsv.gi
 - Implemented
     - SOM (GPU + CPU)
     - KernelPCA (CPU)
+    - Metric Matching (CPU)
   
 
 
@@ -24,6 +25,14 @@ digits data using SOM
 digits data using kernelPCA with gaussian kernel
 
 <img src="images/digits-kpca.png" width=400px />
+
+digits data using metric matching
+
+<img src="images/digits-mm.png" width=400px />
+
+
+
+
 
 
 
