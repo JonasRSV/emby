@@ -36,11 +36,10 @@ def simple_clusters():
 
     colors = np.array(list(mcolors.TABLEAU_COLORS.values()))
 
-    embeddings = kcpa.fit_transform(x) + np.random.normal(0, 0.01, size=(len(x), 2))
+    embeddings = kcpa.fit_transform(x)
 
     plt.figure(figsize=(14, 14))
     plt.scatter(embeddings[:, 0], embeddings[:, 1], color=colors[y])
-    plt.savefig("../images/digits-kpca.png", bbox_inches="tight")
     plt.show()
 
 

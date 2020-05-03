@@ -1,18 +1,22 @@
 import numpy as np
-from emby.KernelPCA.device import detect, cpu, gpu
+from emby.MM.device import detect, cpu, gpu
 from emby.config import Logging, Device
 
 
-class KernelPCA:
+class MM:
     """
-    A Implementation of kernel PCA
+    A Implementation of metric minimization
 
     Parameters
     ----------
     Z
         dimensions of the embedding space
-    kernel
-        The feature space (gaussian | polynomial)
+    metric:
+        metric to minimize: euclidean | cosine
+    x_variance:
+        variance in x_space
+    z_variance:
+        variance in z_space
     logging
         :class:`emby.Logging` level of logging to use (default no logging)
     device
@@ -26,23 +30,29 @@ class KernelPCA:
 
     Fitting some 2D points
 
-    >>> from emby import KernelPCA
+    >>> from emby import MM
     >>> import numpy as np
     >>> x = np.concatenate([
     ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),
     ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)
     ... ])
-    >>> kpca = KernelPCA(Z=2)
-    >>> kpca.fit_transform(x)
+    >>> mm = MM(Z=2)
+    >>> mm.fit_transform(x)
 
     """
 
     def __init__(self, Z: int,
-                 kernel: str = "gaussian",
+                 metric:str = "euclidean",
+                 x_variance: float = 1.0,
+                 z_variance: float = 1.0,
+                 epochs: int = 100,
                  logging: int = Logging.Nothing,
                  device: int = Device.Detect,
                  **kwargs):
         self.z = Z
+        self.x_variance = x_variance
+        self.z_variance = z_variance
+        self.epochs = epochs
 
         self.logging = logging
 
@@ -58,9 +68,9 @@ class KernelPCA:
             Device.GPU: gpu
         }
 
-        self._fit, self._project, self._kernel = modes[device](logging, kernel=kernel, **kwargs)
+        self._fit, self._closest = modes[device](logging, metric=metric, **kwargs)
 
-        self.evecs = None
+        self.bases = None
         self.X = None
 
     def fit(self, x: np.ndarray):
@@ -82,19 +92,26 @@ class KernelPCA:
 
         Fit some 2D data
 
-        >>> from emby import KernelPCA
+        >>> from emby import MM
         >>> import numpy as np
         >>> x = np.concatenate([
         ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),
         ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)
         ... ])
-        >>> kpca = KernelPCA(Z=2)
-        >>> kpca.fit(x)
+        >>> mm = MM(Z=2)
+        >>> mm.fit(x)
         """
 
-        self.X, self.evecs = self._fit(x, z=self.z, kernel=self._kernel)
+        self.bases = self._fit(x=x,
+                               z=self.z,
+                               x_variance=self.x_variance,
+                               z_variance=self.z_variance,
+                               epochs=self.epochs,
+                               verbose=self.fit_verbose)
+        self.X = x
 
         return self
+
 
     def fit_transform(self, x: np.ndarray):
         """
@@ -116,20 +133,20 @@ class KernelPCA:
         Fit, transform and plot some 2D data
 
         >>> import matplotlib.pyplot as plt
-        >>> from emby import KernelPCA
+        >>> from emby import MM
         >>> import numpy as np
         >>> x = np.concatenate([
         ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),
         ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)
         ... ])
-        >>> kpca = KernelPCA(Z=2)
-        >>> base_space = kpca.fit_transform(x)
+        >>> mm = MM(Z=2)
+        >>> base_space = mm.fit_transform(x)
         >>> plt.plot(base_space[:, 0], base_space[:, 1])
 
         """
 
         self.fit(x)
-        return self.transform(x)
+        return self.bases
 
     def transform(self, x: np.ndarray):
         """
@@ -151,18 +168,17 @@ class KernelPCA:
         transform and plot some 2D data
 
         >>> import matplotlib.pyplot as plt
-        >>> from emby import KernelPCA
+        >>> from emby import MM
         >>> import numpy as np
         >>> x = np.concatenate([
         ...    np.random.multivariate_normal(np.ones(2) * -4, np.eye(2), size=500),
         ...    np.random.multivariate_normal(np.ones(2) * 4, np.eye(2), size=500)
         ... ])
-        >>> kcpa = KernelPCA(Z=2)
-        >>> kcpa.fit(x)
-        >>> base_space = kcpa.transform(x)
+        >>> mm = MM(Z=2)
+        >>> mm.fit(x)
+        >>> base_space = mm.transform(x)
         >>> plt.plot(base_space[:, 0], base_space[:, 1])
 
         """
-        return self._project(x, self.X, eigen_vectors=self.evecs, kernel=self._kernel)
 
-
+        return self.bases[self._closest(x, self.X)]
