@@ -10,6 +10,7 @@ See documentation, installation and usage information [here](https://jonasrsv.gi
     - SOM (GPU + CPU)
     - KernelPCA (CPU)
     - Metric Matching (CPU)
+    - Preedy (CPU)
   
 
 
@@ -29,6 +30,10 @@ digits data using kernelPCA with gaussian kernel
 digits data using metric matching
 
 <img src="images/digits-mm.png" width=400px />
+
+digits data using preedy
+
+<img src="images/digits-preedy.png" width=400px />
 
 
 
