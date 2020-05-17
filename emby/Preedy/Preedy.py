@@ -42,8 +42,8 @@ class Preedy:
     """
 
     def __init__(self, Z: int,
-                 alpha: np.float64 = 0.5,
-                 beta: np.float64 = 5.0,
+                 alpha: np.float64 = 2.0,
+                 beta: np.float64 = 35.0,
                  n: int = 20,
                  logging: int = Logging.Nothing,
                  device: int = Device.Detect,

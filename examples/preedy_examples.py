@@ -14,7 +14,7 @@ def simple_clusters():
 
     y = np.concatenate([np.zeros(500), np.ones(500)]).astype(np.int)
 
-    mm = emby.Preedy(Z=2, logging=emby.Logging.Everything)
+    mm = emby.Preedy(Z=2, alpha=0.1, n=10, logging=emby.Logging.Everything)
 
     colors = np.array(list(mcolors.TABLEAU_COLORS.values()))
 
@@ -32,7 +32,7 @@ def digits():
     y = digits.target
     x = x - x.mean()
 
-    mm = emby.Preedy(Z=2, alpha=1.0, n=25, beta=5.0, logging=emby.Logging.Everything)
+    mm = emby.Preedy(Z=2, alpha=2.0, n=35, beta=50.0, logging=emby.Logging.Everything)
 
     colors = np.array(list(mcolors.TABLEAU_COLORS.values()))
 
@@ -66,7 +66,7 @@ def mnist():
     y = y[indexes[:10000]]
 
 
-    em = emby.Preedy(Z=2, alpha=1.0, n=10, logging=emby.Logging.Progress)
+    em = emby.Preedy(Z=2, alpha=2.0,  n=25, logging=emby.Logging.Progress)
 
     colors = np.array(list(mcolors.TABLEAU_COLORS.values()))
 
