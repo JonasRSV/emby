@@ -139,7 +139,7 @@ def _fit(x: np.ndarray,
             -np.sqrt(_euclidean(y_bases, y_bases)) / y_variance
         ).astype(np.float32))
 
-    x = cuda.to_device(x.astype(np.float32))  # single precision because its like 20x speed-up on nvidia gpus
+    x = cuda.to_device(x.astype(np.float32))
     x_bases = cuda.to_device(x_bases.astype(np.float32))
     learning_rate = cuda.to_device(np.array(learning_rate, dtype=np.float32))
 

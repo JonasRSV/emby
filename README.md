@@ -7,7 +7,7 @@ Is a tiny library consisting of embedding functions
 See documentation, installation and usage information [here](https://jonasrsv.github.io/emby/build/html/index.html)
 
 - Implemented
-    - SOM (GPU + CPU)
+    - SOM (CPU) # (GPU for old version on older branch)
     - KernelPCA (CPU)
     - Metric Matching (CPU)
     - Preedy (CPU)

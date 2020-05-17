@@ -43,30 +43,42 @@ def _euclidean_argmin(x: np.ndarray, x_bases: np.ndarray):
 def _fit(x: np.ndarray,
          x_bases: np.ndarray,
          y_bases: np.ndarray,
+         batch_size: int,
          learning_rate: float,
-         y_variance: float,
          epochs: int,
          verbose: bool) -> np.ndarray:
-    bases = len(x_bases)
+    samples = len(x)
+    bases, dim = x_bases.shape
 
-    y_neighbourhood = np.exp(-np.sqrt(_euclidean(y_bases, y_bases)) / y_variance)
+    y_distances = _euclidean(y_bases, y_bases)
+    neighbourhood = np.zeros((bases, bases), dtype=np.int32)
+    for i in range(bases):
+        neighbourhood[i] = np.argsort(y_distances[i])
+
+    indexes = np.arange(samples)
     for e in range(epochs):
-        if verbose:
+        if verbose and e % (epochs // 20) == 0:
             x_freeze = x_bases.copy()
 
-        winners = _euclidean_argmin(x, x_bases)
+        batch = np.random.choice(indexes, size=batch_size)
+
+        x_batch = x[batch]
+        winners = _euclidean_argmin(x_batch, x_bases)
 
         # 1. x_bases winners is pulled towards the x
         # 2. x_bases pulls x_neighbourhood towards x as well
 
+        neighbours = int((1 - (e / epochs)) * bases // 2)
         for i in range(winners.size):
             winner = winners[i]
 
-            for j in range(bases):
-                neighbourhood = y_neighbourhood[j][winner]
-                x_bases[j][:] = x_bases[j] + neighbourhood * learning_rate * (x[i] - x_bases[j])
+            winning_neighbours = neighbourhood[winner][:neighbours]
+            for j in range(winning_neighbours.size):
+                winning_neighbour = winning_neighbours[j]
+                x_bases[winning_neighbour][:] = x_bases[winning_neighbour] + learning_rate * \
+                                                (x_batch[i] - x_bases[winning_neighbour])
 
-        if verbose:
+        if verbose and e % (epochs // 20) == 0:
             print("epoch", e, " / ", epochs, " -- ", np.abs(x_bases - x_freeze).sum())
 
     return x_bases

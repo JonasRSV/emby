@@ -1,5 +1,5 @@
 import numpy as np
-from emby.SOM.placement import _place_spheres, _place_uniform
+from emby.SOM.placement import _place_uniform
 from emby.SOM.device import detect, cpu, gpu
 from emby.config import Logging, Device
 
@@ -18,10 +18,8 @@ class SOM:
         Learning rate used in competitive learning
     epochs
         Number of competitive learning iterations
-    y_variance
-        variance of neighbourhood function in embedding space
-    mode
-        ("uniform" | "sphere") how the bases are placed in the embedding space
+    batch_size:
+        Winners in each update
     logging
         :class:`emby.Logging` level of logging to use (default no logging)
     device
@@ -48,9 +46,8 @@ class SOM:
 
     def __init__(self, Z: int, bases: int,
                  learning_rate: float = 0.4,
-                 epochs: int = 30,
-                 y_variance: float = 0.2,
-                 mode: str = "uniform",
+                 epochs: int = 2000,
+                 batch_size: int = 20,
                  logging: int = Logging.Nothing,
                  device: int = Device.Detect,
                  **kwargs):
@@ -58,20 +55,14 @@ class SOM:
         self.bases = bases
         self.learning_rate = learning_rate
         self.epochs = epochs
+        self.batch_size = batch_size
 
-        self.y_variance = y_variance
         self.logging = logging
 
         self.fit_verbose = False
         if logging > Logging.Nothing:
             self.fit_verbose = True
 
-        modes = {
-            "uniform": _place_uniform,
-            "sphere": _place_spheres
-        }
-
-        self.mode = modes[mode]
         self.kwargs = kwargs
 
         modes = {
@@ -114,18 +105,18 @@ class SOM:
         >>> som.fit(x)
         """
 
-        self.x_bases, self.y_bases = self.mode(x,
-                                               bases=self.bases,
-                                               z=self.z,
-                                               **self.kwargs)
+        self.x_bases, self.y_bases = _place_uniform(x,
+                                                    bases=self.bases,
+                                                    z=self.z,
+                                                    **self.kwargs)
 
         self.x_bases = self._fit(x,
-                                x_bases=self.x_bases,
-                                y_bases=self.y_bases,
-                                learning_rate=self.learning_rate,
-                                y_variance=self.y_variance,
-                                epochs=self.epochs,
-                                verbose=self.fit_verbose)
+                                 x_bases=self.x_bases,
+                                 y_bases=self.y_bases,
+                                 batch_size=self.batch_size,
+                                 learning_rate=self.learning_rate,
+                                 epochs=self.epochs,
+                                 verbose=self.fit_verbose)
 
         return self
 

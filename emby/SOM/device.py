@@ -29,5 +29,6 @@ def gpu(logging: int):
     if logging >= Logging.Everything:
         print(f"Device GPU")
 
-    return gpu_core._fit, gpu_core._euclidean_argmin, cpu_core._similarity_mode
+    raise NotImplementedError("GPU not yet implemented for new SOM")
+    #return gpu_core._fit, gpu_core._euclidean_argmin, cpu_core._similarity_mode
 
