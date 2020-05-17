@@ -43,7 +43,7 @@
             
   <h1>Source code for emby.SOM.SOM</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">emby.SOM.placement</span> <span class="k">import</span> <span class="n">_place_spheres</span><span class="p">,</span> <span class="n">_place_uniform</span>
+<span class="kn">from</span> <span class="nn">emby.SOM.placement</span> <span class="k">import</span> <span class="n">_place_uniform</span>
 <span class="kn">from</span> <span class="nn">emby.SOM.device</span> <span class="k">import</span> <span class="n">detect</span><span class="p">,</span> <span class="n">cpu</span><span class="p">,</span> <span class="n">gpu</span>
 <span class="kn">from</span> <span class="nn">emby.config</span> <span class="k">import</span> <span class="n">Logging</span><span class="p">,</span> <span class="n">Device</span>
 
@@ -62,10 +62,8 @@
 <span class="sd">        Learning rate used in competitive learning</span>
 <span class="sd">    epochs</span>
 <span class="sd">        Number of competitive learning iterations</span>
-<span class="sd">    y_variance</span>
-<span class="sd">        variance of neighbourhood function in embedding space</span>
-<span class="sd">    mode</span>
-<span class="sd">        (&quot;uniform&quot; | &quot;sphere&quot;) how the bases are placed in the embedding space</span>
+<span class="sd">    batch_size:</span>
+<span class="sd">        Winners in each update</span>
 <span class="sd">    logging</span>
 <span class="sd">        :class:`emby.Logging` level of logging to use (default no logging)</span>
 <span class="sd">    device</span>
@@ -92,9 +90,8 @@
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span>
-                 <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
-                 <span class="n">y_variance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
-                 <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;uniform&quot;</span><span class="p">,</span>
+                 <span class="n">epochs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span>
+                 <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
                  <span class="n">logging</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Logging</span><span class="o">.</span><span class="n">Nothing</span><span class="p">,</span>
                  <span class="n">device</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Device</span><span class="o">.</span><span class="n">Detect</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -102,20 +99,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">bases</span> <span class="o">=</span> <span class="n">bases</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span> <span class="o">=</span> <span class="n">learning_rate</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">epochs</span> <span class="o">=</span> <span class="n">epochs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">y_variance</span> <span class="o">=</span> <span class="n">y_variance</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logging</span> <span class="o">=</span> <span class="n">logging</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">fit_verbose</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="n">logging</span> <span class="o">&gt;</span> <span class="n">Logging</span><span class="o">.</span><span class="n">Nothing</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fit_verbose</span> <span class="o">=</span> <span class="kc">True</span>
 
-        <span class="n">modes</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;uniform&quot;</span><span class="p">:</span> <span class="n">_place_uniform</span><span class="p">,</span>
-            <span class="s2">&quot;sphere&quot;</span><span class="p">:</span> <span class="n">_place_spheres</span>
-        <span class="p">}</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">modes</span><span class="p">[</span><span class="n">mode</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
 
         <span class="n">modes</span> <span class="o">=</span> <span class="p">{</span>
@@ -158,18 +149,18 @@
 <span class="sd">        &gt;&gt;&gt; som.fit(x)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">x_bases</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_bases</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
-                                               <span class="n">bases</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bases</span><span class="p">,</span>
-                                               <span class="n">z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span>
-                                               <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_bases</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_bases</span> <span class="o">=</span> <span class="n">_place_uniform</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
+                                                    <span class="n">bases</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bases</span><span class="p">,</span>
+                                                    <span class="n">z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span>
+                                                    <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">x_bases</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span>
-                                <span class="n">x_bases</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_bases</span><span class="p">,</span>
-                                <span class="n">y_bases</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_bases</span><span class="p">,</span>
-                                <span class="n">learning_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
-                                <span class="n">y_variance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_variance</span><span class="p">,</span>
-                                <span class="n">epochs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
-                                <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_verbose</span><span class="p">)</span>
+                                 <span class="n">x_bases</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_bases</span><span class="p">,</span>
+                                 <span class="n">y_bases</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_bases</span><span class="p">,</span>
+                                 <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+                                 <span class="n">learning_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
+                                 <span class="n">epochs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">epochs</span><span class="p">,</span>
+                                 <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_verbose</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span></div>
 

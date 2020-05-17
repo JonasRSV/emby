@@ -52,7 +52,7 @@
 <span id="som"></span><h1>Self Organizing Map<a class="headerlink" href="#self-organizing-map" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="emby.SOM">
-<em class="property">class </em><code class="descclassname">emby.</code><code class="descname">SOM</code><span class="sig-paren">(</span><em>Z: int</em>, <em>bases: int</em>, <em>learning_rate: float = 0.4</em>, <em>epochs: int = 30</em>, <em>y_variance: float = 0.2</em>, <em>mode: str = 'uniform'</em>, <em>logging: int = 0</em>, <em>device: int = 0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/emby/SOM/SOM.html#SOM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#emby.SOM" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">emby.</code><code class="descname">SOM</code><span class="sig-paren">(</span><em>Z: int</em>, <em>bases: int</em>, <em>learning_rate: float = 0.4</em>, <em>epochs: int = 2000</em>, <em>batch_size: int = 20</em>, <em>logging: int = 0</em>, <em>device: int = 0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/emby/SOM/SOM.html#SOM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#emby.SOM" title="Permalink to this definition">¶</a></dt>
 <dd><p>A self-organizing map</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -63,8 +63,7 @@
 <li><strong>bases</strong> – Number of bases in the map</li>
 <li><strong>learning-rate</strong> – Learning rate used in competitive learning</li>
 <li><strong>epochs</strong> – Number of competitive learning iterations</li>
-<li><strong>y_variance</strong> – variance of neighbourhood function in embedding space</li>
-<li><strong>mode</strong> – (“uniform” | “sphere”) how the bases are placed in the embedding space</li>
+<li><strong>batch_size</strong> – Winners in each update</li>
 <li><strong>logging</strong> – <a class="reference internal" href="config.html#emby.Logging" title="emby.Logging"><code class="xref py py-class docutils literal"><span class="pre">emby.Logging</span></code></a> level of logging to use (default no logging)</li>
 <li><strong>device</strong> – <a class="reference internal" href="config.html#emby.Device" title="emby.Device"><code class="xref py py-class docutils literal"><span class="pre">emby.Device</span></code></a> device configuration for this class (default detect)</li>
 <li><strong>**kwargs</strong> – additional arguments..</li>
