@@ -7,7 +7,7 @@ Cython==0.29.17
 docutils==0.16
 idna==2.9
 imagesize==1.2.0
-Jinja2==2.11.2
+Jinja2==2.11.3
 joblib==0.14.1
 kiwisolver==1.2.0
 llvmlite==0.32.0
