@@ -8,7 +8,7 @@ setuptools.setup(
     description="",
     url="https://github.com/JonasRSV/emby",
     packages=setuptools.find_packages(),
-    install_requires=["numba==0.49.0", "numpy==1.18.3"],
+    install_requires=["numba==0.49.0", "numpy==1.22.0"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
